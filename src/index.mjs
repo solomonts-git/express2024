@@ -4,6 +4,12 @@ const app = express();
 
 const PORT = process.env.PORT || 3000;
 
+const mockUsers = [
+  { id: 1, username: "degu", displayName: "Degu" },
+  { id: 2, username: "tamerat", displayName: "Tamerat" },
+  { id: 3, username: "teddy", displayName: "Teddy" },
+];
+
 app.get("/", (req, res) => {
   res.send("Hello, World!");
   // res.send({msg:"Hello, World!"});
@@ -11,11 +17,20 @@ app.get("/", (req, res) => {
 });
 
 app.get("/api/users", (req, res) => {
-  res.send([
-    { id: 1, username: "degu", displayName: "Degu" },
-    { id: 2, username: "tamerat", displayName: "Tamerat" },
-    { id: 3, username: "teddy", displayName: "Teddy" },
-  ]);
+  res.send(mockUsers);
+});
+
+app.get("/api/users/:id", (req, res) => {
+  const parsedId = parseInt(req.params.id);
+  if (isNaN(parsedId)) {
+    return res.status(400).send({ message: "Bad Request" });
+  }
+
+  const findUser = mockUsers.find((user) => user.id === parsedId);
+
+  if (!findUser) return res.sendStatus(404);
+
+  return res.send(findUser);
 });
 
 app.listen(PORT, () => {
