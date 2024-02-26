@@ -1,4 +1,5 @@
 import express from "express";
+import { query, validationResult, body, matchedData } from "express-validator";
 
 const app = express();
 
@@ -34,21 +35,32 @@ app.get("/", (req, res) => {
   // res.status(201).send({msg:"Hello, World!"});
 });
 
-app.get("/api/users", (req, res) => {
-  console.log(req.query);
-  const {
-    query: { filter, value },
-  } = req;
-  // when filter and value are undefined
-  if (!filter && !value) {
-    return res.send(mockUsers);
+app.get(
+  "/api/users",
+  query("filter")
+    .isString()
+    .withMessage("should be string")
+    .notEmpty()
+    .withMessage("should not be empty")
+    .isLength({ min: 3, max: 10 })
+    .withMessage("filter should be between 3 and 10"),
+  (req, res) => {
+    const result = validationResult(req);
+    console.log(result);
+    const {
+      query: { filter, value },
+    } = req;
+    // when filter and value are undefined
+    if (!filter && !value) {
+      return res.send(mockUsers);
+    }
+    if (filter && value) {
+      return res.send(mockUsers.filter((user) => user[filter].includes(value)));
+    } else {
+      res.send(mockUsers);
+    }
   }
-  if (filter && value) {
-    return res.send(mockUsers.filter((user) => user[filter].includes(value)));
-  } else {
-    res.send(mockUsers);
-  }
-});
+);
 
 app.get("/api/users/:id", (req, res) => {
   const { findUserIndex } = req;
@@ -57,14 +69,36 @@ app.get("/api/users/:id", (req, res) => {
 
   return res.send(findUser);
 });
+// here we use validation in the code, we can simplify by
+// using checkSchema() method from express-validator
+app.post(
+  "/api/users",
+  body("username")
+    .notEmpty()
+    .withMessage("username cannot be empty")
+    .isString()
+    .withMessage("should be string")
+    .isLength({ min: 5, max: 32 })
+    .withMessage(
+      "username must be atleast 5 character with a max of 32 characters"
+    ),
+  (req, res) => {
+    const result = validationResult(req);
+    console.log(result);
+    if (!result.isEmpty()) {
+      return res.status(400).send({ errors: result.array() });
+    }
 
-app.post("api/users", (req, res) => {
-  // console.log(req.body);
-  const { body } = req.body;
-  const newUser = { id: mockUsers[mockUsers.length - 1].id + 1, ...body };
-  mockUsers.push(newUser);
-  return res.status(201).send(newUser);
-});
+    const data = matchedData(request);
+
+    // const { body } = req.body;
+    //const newUser = { id: mockUsers[mockUsers.length - 1].id + 1, ...body };
+    //use validated data instead of request data
+    const newUser = { id: mockUsers[mockUsers.length - 1].id + 1, ...data };
+    mockUsers.push(newUser);
+    return res.status(201).send(newUser);
+  }
+);
 
 // put -- used to update the entire request, if you miss
 // the data will be lost
