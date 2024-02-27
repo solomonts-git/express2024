@@ -15,6 +15,8 @@ router.get(
     .isLength({ min: 3, max: 10 })
     .withMessage("filter should be between 3 and 10"),
   (req, res) => {
+    console.log(req.session);
+    console.log(req.session.id);
     const result = validationResult(req);
     console.log(result);
     const {
