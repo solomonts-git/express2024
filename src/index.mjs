@@ -3,9 +3,16 @@ import usersRouter from "./routes/users.mjs";
 import productsRouter from "./routes/products.mjs";
 import cookieParser from "cookie-parser";
 import session from "express-session";
-import { mockUsers } from "./utils/constants.mjs";
+import passport from "passport";
+import "./strategies/local-strategy.mjs";
+import mongoose from "mongoose";
 
 const app = express();
+
+mongoose
+  .connect("mongodb://0.0.0.0:27017/express_tutorial")
+  .then(() => console.log("Connected ot database"))
+  .catch((err) => console.log(`Error: ${err}`));
 
 const PORT = process.env.PORT || 3000;
 
@@ -23,6 +30,9 @@ app.use(
   })
 );
 
+app.use(passport.initialize());
+//used to attach dynamic property user
+app.use(passport.session());
 app.use(usersRouter);
 app.use(productsRouter);
 
@@ -37,24 +47,23 @@ app.get("/", (req, res) => {
   // res.status(201).send({msg:"Hello, World!"});
 });
 
-app.post("/api/auth", (req, res) => {
-  const {
-    body: { username, password },
-  } = req;
-  const findUser = mockUsers.find((user) => user.username === username);
-
-  if (!findUser || findUser.password !== password) {
-    return res.status(401).send({ msg: "BAD CREDENTIALS" });
-  }
-  req.session.user = findUser;
-  return res.status(200).send(findUser);
+app.post("/api/auth", passport.authenticate("local"), (req, res) => {
+  res.sendStatus(200);
 });
+
 app.get("/api/auth/status", (req, res) => {
-  return req.session.user
-    ? response.status(200).send(request.session.user)
-    : res.status(401).send({ msg: "Not Authenticated" });
+  console.log("Inside /auth/status endpoint");
+  console.log(req.user);
+  console.log(req.session);
+  return req.user ? res.send(user) : res.sendStatus(401);
 });
-
+app.post("/api/auth/logout", (req, res) => {
+  if (!req.user) return res.sendStatus(401);
+  req.logout((err) => {
+    if (err) return res.sendStatus(400);
+    res.sendStatus(200);
+  });
+});
 app.get("/api/cart", (req, res) => {
   if (!req.session.user) return res.sendStatus(401);
   return res.send(req.session.cart ?? []);

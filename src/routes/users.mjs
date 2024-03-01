@@ -2,6 +2,7 @@ import { Router } from "express";
 import { query, validationResult, body, matchedData } from "express-validator";
 import { mockUsers } from "../utils/constants.mjs";
 import { resolveIndexByUserId } from "../utils/middleware.mjs";
+import { User } from "../mongoose/schemas/user.mjs";
 
 const router = Router();
 
@@ -40,34 +41,17 @@ router.get("/api/users/:id", (req, res) => {
 
   return res.send(findUser);
 });
-router.post(
-  "/api/users",
-  body("username")
-    .notEmpty()
-    .withMessage("username cannot be empty")
-    .isString()
-    .withMessage("should be string")
-    .isLength({ min: 5, max: 32 })
-    .withMessage(
-      "username must be atleast 5 character with a max of 32 characters"
-    ),
-  (req, res) => {
-    const result = validationResult(req);
-    console.log(result);
-    if (!result.isEmpty()) {
-      return res.status(400).send({ errors: result.array() });
-    }
-
-    const data = matchedData(request);
-
-    // const { body } = req.body;
-    //const newUser = { id: mockUsers[mockUsers.length - 1].id + 1, ...body };
-    //use validated data instead of request data
-    const newUser = { id: mockUsers[mockUsers.length - 1].id + 1, ...data };
-    mockUsers.push(newUser);
-    return res.status(201).send(newUser);
+router.post("/api/users", async (req, res) => {
+  const { body } = req;
+  const newUser = new User(body);
+  try {
+    const savedUser = await newUser.save();
+    return res.status(201).send(savedUser);
+  } catch (err) {
+    console.log("err", err);
+    return res.sendStatus(400);
   }
-);
+});
 
 // put -- used to update the entire request, if you miss
 // the data will be lost
