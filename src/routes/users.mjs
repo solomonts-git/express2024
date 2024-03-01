@@ -3,7 +3,7 @@ import { query, validationResult, body, matchedData } from "express-validator";
 import { mockUsers } from "../utils/constants.mjs";
 import { resolveIndexByUserId } from "../utils/middleware.mjs";
 import { User } from "../mongoose/schemas/user.mjs";
-
+import { hashPassword } from "../utils/helpers.mjs";
 const router = Router();
 
 router.get(
@@ -43,6 +43,7 @@ router.get("/api/users/:id", (req, res) => {
 });
 router.post("/api/users", async (req, res) => {
   const { body } = req;
+  body.password = hashPassword(body.password);
   const newUser = new User(body);
   try {
     const savedUser = await newUser.save();
