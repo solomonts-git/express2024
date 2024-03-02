@@ -6,12 +6,13 @@ import session from "express-session";
 import passport from "passport";
 import "./strategies/local-strategy.mjs";
 import mongoose from "mongoose";
+import MongoStore from "connect-mongo";
 
 const app = express();
 
 mongoose
   .connect("mongodb://0.0.0.0:27017/express_tutorial")
-  .then(() => console.log("Connected ot database"))
+  .then(() => console.log("Connected to database"))
   .catch((err) => console.log(`Error: ${err}`));
 
 const PORT = process.env.PORT || 3000;
@@ -27,6 +28,9 @@ app.use(
     cookie: {
       maxAge: 60000 * 60,
     },
+    store: MongoStore.create({
+      client: mongoose.connection.getClient(),
+    }),
   })
 );
 
